@@ -2,12 +2,12 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
 
-fn main() -> anyhow::Result<()> {
+fn main() {
     let lines: Vec<u64> = read_lines()
         .expect("Error reading file")
         .map(|line| {
             line.expect("Error reading line")
-                .parse::<u64>()
+                .parse()
                 .expect("Error parsing line as number")
         })
         .collect();
@@ -17,8 +17,6 @@ fn main() -> anyhow::Result<()> {
 
     let part_2 = part_2(lines.iter().cloned());
     println!("Part 2: {}", part_2);
-
-    Ok(())
 }
 
 fn part_1(mut measurements: impl Iterator<Item = u64>) -> u64 {
