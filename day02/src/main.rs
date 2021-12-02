@@ -4,23 +4,57 @@ use std::str::FromStr;
 use std::{env, fs::File, io};
 
 fn main() {
-    let commands = read_lines().expect("Error reading file").map(|line| {
-        line.expect("Error reading line")
-            .parse::<Command>()
-            .expect("Error parsing command")
-    });
+    let commands: Vec<Command> = read_lines()
+        .expect("Error reading file")
+        .map(|line| {
+            line.expect("Error reading line")
+                .parse::<Command>()
+                .expect("Error parsing command")
+        })
+        .collect();
 
-    let position = commands.fold(Position::new(), |mut position, command| {
-        position.apply_command(&command);
-        position
-    });
+    let mut submarine = Submarine::new();
+    submarine.navigate(commands.iter());
+    println!("Part 1: {}", submarine.result());
 
-    println!("Part 1: {}", position.result());
+    let mut submarine = Submarine::new();
+    submarine.navigate_with_aim(commands.iter());
+    println!("Part 2: {}", submarine.result());
+}
+
+struct Submarine {
+    position: Position,
+    aim: i64,
+}
+
+impl Submarine {
+    fn new() -> Submarine {
+        Submarine {
+            position: Position::new(),
+            aim: 0,
+        }
+    }
+
+    fn result(&self) -> i64 {
+        self.position.depth * self.position.horizontal as i64
+    }
+
+    fn navigate<'a>(&mut self, commands: impl Iterator<Item = &'a Command>) {
+        for command in commands {
+            self.position.apply_command(&command);
+        }
+    }
+
+    fn navigate_with_aim<'a>(&mut self, commands: impl Iterator<Item = &'a Command>) {
+        for command in commands {
+            self.aim = self.position.apply_command_with_aim(&command, self.aim);
+        }
+    }
 }
 
 struct Position {
     horizontal: u64,
-    depth: u64,
+    depth: i64,
 }
 
 impl Position {
@@ -31,15 +65,23 @@ impl Position {
         }
     }
 
-    fn result(&self) -> u64 {
-        self.horizontal * self.depth
-    }
-
     fn apply_command(&mut self, command: &Command) {
         match command {
             Command::Forward(n) => self.horizontal += n,
-            Command::Down(n) => self.depth += n,
-            Command::Up(n) => self.depth -= n,
+            Command::Down(n) => self.depth += *n as i64,
+            Command::Up(n) => self.depth -= *n as i64,
+        }
+    }
+
+    fn apply_command_with_aim(&mut self, command: &Command, aim: i64) -> i64 {
+        match command {
+            Command::Forward(n) => {
+                self.horizontal += n;
+                self.depth += aim * *n as i64;
+                aim
+            }
+            Command::Down(n) => aim + *n as i64,
+            Command::Up(n) => aim - *n as i64,
         }
     }
 }
