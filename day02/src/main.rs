@@ -13,77 +13,54 @@ fn main() {
         })
         .collect();
 
-    let mut submarine = Submarine::new();
+    let mut submarine = Submarine::default();
     submarine.navigate(commands.iter());
     println!("Part 1: {}", submarine.result());
 
-    let mut submarine = Submarine::new();
+    let mut submarine = Submarine::default();
     submarine.navigate_with_aim(commands.iter());
     println!("Part 2: {}", submarine.result());
 }
 
+#[derive(Default)]
 struct Submarine {
     position: Position,
     aim: i64,
 }
 
 impl Submarine {
-    fn new() -> Submarine {
-        Submarine {
-            position: Position::new(),
-            aim: 0,
-        }
-    }
-
     fn result(&self) -> i64 {
         self.position.depth * self.position.horizontal as i64
     }
 
     fn navigate<'a>(&mut self, commands: impl Iterator<Item = &'a Command>) {
         for command in commands {
-            self.position.apply_command(&command);
+            match command {
+                Command::Forward(n) => self.position.horizontal += n,
+                Command::Down(n) => self.position.depth += *n as i64,
+                Command::Up(n) => self.position.depth -= *n as i64,
+            }
         }
     }
 
     fn navigate_with_aim<'a>(&mut self, commands: impl Iterator<Item = &'a Command>) {
         for command in commands {
-            self.aim = self.position.apply_command_with_aim(&command, self.aim);
+            match command {
+                Command::Forward(n) => {
+                    self.position.horizontal += n;
+                    self.position.depth += self.aim * *n as i64;
+                }
+                Command::Down(n) => self.aim += *n as i64,
+                Command::Up(n) => self.aim -= *n as i64,
+            }
         }
     }
 }
 
+#[derive(Default)]
 struct Position {
     horizontal: u64,
     depth: i64,
-}
-
-impl Position {
-    fn new() -> Position {
-        Position {
-            horizontal: 0,
-            depth: 0,
-        }
-    }
-
-    fn apply_command(&mut self, command: &Command) {
-        match command {
-            Command::Forward(n) => self.horizontal += n,
-            Command::Down(n) => self.depth += *n as i64,
-            Command::Up(n) => self.depth -= *n as i64,
-        }
-    }
-
-    fn apply_command_with_aim(&mut self, command: &Command, aim: i64) -> i64 {
-        match command {
-            Command::Forward(n) => {
-                self.horizontal += n;
-                self.depth += aim * *n as i64;
-                aim
-            }
-            Command::Down(n) => aim + *n as i64,
-            Command::Up(n) => aim - *n as i64,
-        }
-    }
 }
 
 enum Command {
