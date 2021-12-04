@@ -1,4 +1,5 @@
 use std::{
+    collections::VecDeque,
     env, fmt,
     fs::File,
     io::{self, BufRead},
@@ -19,69 +20,27 @@ fn main() {
 
     lines.next();
 
-    let mut part_1_boards: Vec<Board> = vec![];
+    let mut boards: Vec<Board> = vec![];
 
     while lines.peek().is_some() {
         let board_lines: Vec<String> = lines.by_ref().take_while(|line| line != "").collect();
-        part_1_boards.push(Board::new(board_lines));
+        boards.push(Board::new(board_lines));
     }
 
-    let mut part_2_boards = part_1_boards.clone();
-
-    let mut numbers_iter = numbers.iter();
-    let mut last_number = 0;
-
-    while !part_1_boards.iter().any(|board| board.has_won()) {
-        last_number = *numbers_iter
-            .next()
-            .expect("Ran out of numbers before any board won");
-
-        for board in &mut part_1_boards {
-            board.check(last_number);
-        }
-    }
-
-    let winning_board = part_1_boards.iter().find(|board| board.has_won()).unwrap();
-    let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
-    println!("Part 1: {}", unmarked_sum * last_number);
-
-    let mut numbers_iter = numbers.iter();
-    let mut last_number = 0;
-
-    while part_2_boards
-        .iter()
-        .filter(|board| !board.has_won())
-        .count()
-        > 1
-    {
-        last_number = *numbers_iter
-            .next()
-            .expect("Ran out of numbers before any board won");
-
-        for board in &mut part_2_boards {
-            board.check(last_number);
-        }
-    }
-
-    // Only one board left, continue until it wins
-    let last_winning_board = part_2_boards
-        .iter_mut()
-        .find(|board| !board.has_won())
+    let (number, winning_board) = iterate_boards_in_winning_order(boards.clone(), numbers.clone())
+        .next()
         .unwrap();
+    let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
+    println!("Part 1: {}", unmarked_sum * number);
 
-    while !last_winning_board.has_won() {
-        last_number = *numbers_iter
-            .next()
-            .expect("Ran out of numbers before the last board won");
-
-        last_winning_board.check(last_number);
-    }
-
-    let unmarked_sum: usize = last_winning_board.unmarked_numbers().iter().sum();
-    println!("Part 2: {}", unmarked_sum * last_number);
+    let (number, winning_board) = iterate_boards_in_winning_order(boards.clone(), numbers.clone())
+        .last()
+        .unwrap();
+    let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
+    println!("Part 2: {}", unmarked_sum * number);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Cell {
     number: usize,
     checked: bool,
@@ -96,7 +55,7 @@ impl Cell {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct Board {
     rows: Vec<Vec<Cell>>,
 }
@@ -209,6 +168,44 @@ impl fmt::Display for Board {
         }
 
         Ok(())
+    }
+}
+
+fn iterate_boards_in_winning_order(boards: Vec<Board>, numbers: Vec<usize>) -> BoardsIterator {
+    BoardsIterator {
+        boards,
+        numbers: VecDeque::from(numbers),
+        last_number: 0,
+    }
+}
+
+struct BoardsIterator {
+    boards: Vec<Board>,
+    numbers: VecDeque<usize>,
+    last_number: usize,
+}
+
+impl Iterator for BoardsIterator {
+    type Item = (usize, Board);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while !self.boards.iter().any(|board| board.has_won()) && !self.numbers.is_empty() {
+            self.last_number = self.numbers.pop_front().unwrap();
+
+            for board in &mut self.boards {
+                board.check(self.last_number);
+            }
+        }
+
+        if let Some(next_winning_board_index) = self.boards.iter().position(|board| board.has_won())
+        {
+            Some((
+                self.last_number,
+                self.boards.remove(next_winning_board_index),
+            ))
+        } else {
+            None
+        }
     }
 }
 
