@@ -19,32 +19,69 @@ fn main() {
 
     lines.next();
 
-    let mut boards: Vec<Board> = vec![];
+    let mut part_1_boards: Vec<Board> = vec![];
 
     while lines.peek().is_some() {
         let board_lines: Vec<String> = lines.by_ref().take_while(|line| line != "").collect();
-        boards.push(Board::new(board_lines));
+        part_1_boards.push(Board::new(board_lines));
     }
+
+    let mut part_2_boards = part_1_boards.clone();
 
     let mut numbers_iter = numbers.iter();
     let mut last_number = 0;
 
-    while !boards.iter().any(|board| board.has_won()) {
+    while !part_1_boards.iter().any(|board| board.has_won()) {
         last_number = *numbers_iter
             .next()
             .expect("Ran out of numbers before any board won");
 
-        for board in &mut boards {
+        for board in &mut part_1_boards {
             board.check(last_number);
         }
     }
 
-    let winning_board = boards.iter().find(|board| board.has_won()).unwrap();
+    let winning_board = part_1_boards.iter().find(|board| board.has_won()).unwrap();
     let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
     println!("Part 1: {}", unmarked_sum * last_number);
+
+    let mut numbers_iter = numbers.iter();
+    let mut last_number = 0;
+
+    while part_2_boards
+        .iter()
+        .filter(|board| !board.has_won())
+        .count()
+        > 1
+    {
+        last_number = *numbers_iter
+            .next()
+            .expect("Ran out of numbers before any board won");
+
+        for board in &mut part_2_boards {
+            board.check(last_number);
+        }
+    }
+
+    // Only one board left, continue until it wins
+    let last_winning_board = part_2_boards
+        .iter_mut()
+        .find(|board| !board.has_won())
+        .unwrap();
+
+    while !last_winning_board.has_won() {
+        last_number = *numbers_iter
+            .next()
+            .expect("Ran out of numbers before the last board won");
+
+        last_winning_board.check(last_number);
+    }
+
+    let unmarked_sum: usize = last_winning_board.unmarked_numbers().iter().sum();
+    println!("Part 2: {}", unmarked_sum * last_number);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Cell {
     number: usize,
     checked: bool,
@@ -59,6 +96,7 @@ impl Cell {
     }
 }
 
+#[derive(Clone)]
 struct Board {
     rows: Vec<Vec<Cell>>,
 }
