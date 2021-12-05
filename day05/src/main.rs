@@ -1,8 +1,9 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     env,
     fs::File,
     io::{self, BufRead},
+    iter,
     num::ParseIntError,
     str::FromStr,
 };
@@ -18,8 +19,8 @@ fn main() {
         .collect();
 
     let board = Board::new(lines);
-    let part_1 = board.points_with_overlap().len();
-    println!("Part 1: {}", part_1);
+    println!("Part 1: {}", board.part_1());
+    println!("Part 2: {}", board.part_2());
 }
 
 #[derive(Debug)]
@@ -44,23 +45,24 @@ impl Line {
     fn points(&self) -> Vec<Point> {
         let mut points = vec![];
 
-        let x_iterator: Box<dyn DoubleEndedIterator<Item = usize>> = if self.from.0 <= self.to.0 {
+        let x_iterator: Box<dyn Iterator<Item = usize>> = if self.from.0 < self.to.0 {
             Box::new(self.from.0..=self.to.0)
-        } else {
+        } else if self.from.0 > self.to.0 {
             Box::new((self.to.0..=self.from.0).rev())
+        } else {
+            Box::new(iter::repeat(self.from.0))
         };
 
-        for x in x_iterator {
-            let y_iterator: Box<dyn DoubleEndedIterator<Item = usize>> = if self.from.1 <= self.to.1
-            {
-                Box::new(self.from.1..=self.to.1)
-            } else {
-                Box::new((self.to.1..=self.from.1).rev())
-            };
+        let y_iterator: Box<dyn Iterator<Item = usize>> = if self.from.1 < self.to.1 {
+            Box::new(self.from.1..=self.to.1)
+        } else if self.from.1 > self.to.1 {
+            Box::new((self.to.1..=self.from.1).rev())
+        } else {
+            Box::new(iter::repeat(self.from.1))
+        };
 
-            for y in y_iterator {
-                points.push(Point(x, y));
-            }
+        for (x, y) in x_iterator.zip(y_iterator) {
+            points.push(Point(x, y));
         }
 
         points
@@ -107,7 +109,7 @@ impl Board {
         Board { lines }
     }
 
-    fn points_with_overlap(&self) -> HashSet<Point> {
+    fn part_1(&self) -> usize {
         let mut points: HashMap<Point, usize> = HashMap::new();
 
         // For part 1 we only care about lines that are either horizontal or vertical
@@ -121,7 +123,24 @@ impl Board {
             .into_iter()
             .filter(|(_, count)| *count >= 2)
             .map(|(point, _)| point)
-            .collect()
+            .count()
+    }
+
+    fn part_2(&self) -> usize {
+        let mut points: HashMap<Point, usize> = HashMap::new();
+
+        // For part 2 we use all lines
+        for line in &self.lines {
+            for point in line.points() {
+                *points.entry(point).or_insert(0) += 1;
+            }
+        }
+
+        points
+            .into_iter()
+            .filter(|(_, count)| *count >= 2)
+            .map(|(point, _)| point)
+            .count()
     }
 }
 
