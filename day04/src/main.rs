@@ -27,15 +27,13 @@ fn main() {
         boards.push(Board::new(board_lines));
     }
 
-    let (number, winning_board) = iterate_boards_in_winning_order(boards.clone(), numbers.clone())
-        .next()
-        .unwrap();
+    let mut boards_iterator = iterate_boards_in_winning_order(boards, numbers);
+
+    let (number, winning_board) = boards_iterator.next().unwrap();
     let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
     println!("Part 1: {}", unmarked_sum * number);
 
-    let (number, winning_board) = iterate_boards_in_winning_order(boards.clone(), numbers.clone())
-        .last()
-        .unwrap();
+    let (number, winning_board) = boards_iterator.last().unwrap();
     let unmarked_sum: usize = winning_board.unmarked_numbers().iter().sum();
     println!("Part 2: {}", unmarked_sum * number);
 }
