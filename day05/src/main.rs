@@ -113,11 +113,7 @@ impl Board {
             }
         }
 
-        points
-            .into_iter()
-            .filter(|(_, count)| *count >= 2)
-            .map(|(point, _)| point)
-            .count()
+        points.into_iter().filter(|(_, count)| *count >= 2).count()
     }
 
     fn part_2(&self) -> usize {
@@ -130,11 +126,7 @@ impl Board {
             }
         }
 
-        points
-            .into_iter()
-            .filter(|(_, count)| *count >= 2)
-            .map(|(point, _)| point)
-            .count()
+        points.into_iter().filter(|(_, count)| *count >= 2).count()
     }
 }
 
