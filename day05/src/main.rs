@@ -104,29 +104,32 @@ impl Board {
     }
 
     fn part_1(&self) -> usize {
-        let mut points: HashMap<Point, usize> = HashMap::new();
-
-        // For part 1 we only care about lines that are either horizontal or vertical
-        for line in self.lines.iter().filter(|line| !line.is_diagonal()) {
-            for point in line.points() {
+        self.lines
+            .iter()
+            // For part 1 we only care about lines that are either horizontal or vertical
+            .filter(|line| !line.is_diagonal())
+            .flat_map(|line| line.points())
+            .fold(HashMap::<Point, usize>::new(), |mut points, point| {
                 *points.entry(point).or_insert(0) += 1;
-            }
-        }
-
-        points.into_iter().filter(|(_, count)| *count >= 2).count()
+                points
+            })
+            .values()
+            .filter(|count| **count >= 2)
+            .count()
     }
 
     fn part_2(&self) -> usize {
-        let mut points: HashMap<Point, usize> = HashMap::new();
-
-        // For part 2 we use all lines
-        for line in &self.lines {
-            for point in line.points() {
+        self.lines
+            .iter()
+            // For part 2 we use all lines
+            .flat_map(|line| line.points())
+            .fold(HashMap::<Point, usize>::new(), |mut points, point| {
                 *points.entry(point).or_insert(0) += 1;
-            }
-        }
-
-        points.into_iter().filter(|(_, count)| *count >= 2).count()
+                points
+            })
+            .values()
+            .filter(|count| **count >= 2)
+            .count()
     }
 }
 
