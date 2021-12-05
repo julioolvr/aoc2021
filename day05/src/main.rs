@@ -42,9 +42,7 @@ impl Line {
         !self.is_horizontal() && !self.is_vertical()
     }
 
-    fn points(&self) -> Vec<Point> {
-        let mut points = vec![];
-
+    fn points(&self) -> impl Iterator<Item = Point> {
         let x_iterator: Box<dyn Iterator<Item = usize>> = if self.from.0 < self.to.0 {
             Box::new(self.from.0..=self.to.0)
         } else if self.from.0 > self.to.0 {
@@ -61,11 +59,7 @@ impl Line {
             Box::new(iter::repeat(self.from.1))
         };
 
-        for (x, y) in x_iterator.zip(y_iterator) {
-            points.push(Point(x, y));
-        }
-
-        points
+        x_iterator.zip(y_iterator).map(|(x, y)| Point(x, y))
     }
 }
 
