@@ -8,6 +8,20 @@ use std::{
     str::FromStr,
 };
 
+/**
+ * --- Day 5: Hydrothermal Venture ---
+ *
+ * The program takes as input a list of lines (defined by start and end coordinates) and has to find
+ * how many pairs of coordinates have an overlap of 2 or more lines. Part 1 only takes into account
+ * horizontal and vertical lines, and part 2 includes diagonals (which, per the problem description,
+ * can only be in 45º slopes).
+ *
+ * The main logic for both parts takes each line and converts it to its corresponding points. It
+ * builds a HashMap where the keys are the points and the value is how many times the point shows up
+ * in the list of lines-turned-points. Then it counts how many showed up 2 or more times. Part 1
+ * filters out diagonals before running the same logic as part 2 runs with all the lines.
+ */
+
 fn main() {
     let lines: Vec<Line> = read_lines()
         .expect("Error reading file")

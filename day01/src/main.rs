@@ -2,6 +2,17 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
 
+/**
+ * --- Day 1: Sonar Sweep ---
+ *
+ * The program has to find out, given a list of depths, how many times the depth increases from one
+ * step to the next. For part 2, the same is needed but taking a moving window of 3 consecutive
+ * depth measurements added up.
+ *
+ * The solution has a single function that, given an iterator over numbers, counts how many times it
+ * increases. `part_1` simply passes down the list of measurements, but `part_2` converts the list
+ * to moving windows and maps each window to its sum before counting increases.
+ */
 fn main() {
     let lines: Vec<u64> = read_lines()
         .expect("Error reading file")

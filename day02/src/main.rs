@@ -3,6 +3,19 @@ use std::io::BufRead;
 use std::str::FromStr;
 use std::{env, fs::File, io};
 
+/**
+ * --- Day 2: Dive! ---
+ *
+ * This program reads a series of instructions and moves the submarine according to them. The
+ * submarine has two coordinates - how far forward it has moved (horizontally) and how deep it goes.
+ * It always moves forward horizontally, but it can go up and down in depth.
+ *
+ * Part 1 and part 2 interpret the commands in a different way, but in both cases commands are
+ * represented by the `Command` enum. For part 1 the submarine simply goes forward, up and down
+ * according to the commands. Part 2 includes the concept of "aim" that affects movements, and the
+ * `Submarine` struct is in charge of keeping track of.
+ */
+
 fn main() {
     let commands: Vec<Command> = read_lines()
         .expect("Error reading file")

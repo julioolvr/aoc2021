@@ -3,6 +3,48 @@ use std::iter::FromIterator;
 use std::ops;
 use std::{env, fs::File, io};
 
+/**
+ * --- Day 3: Binary Diagnostic ---
+ *
+ * Given a list of diagnostics (binary numbers) the program has to calculate a few properties of the
+ * submarine.
+ *
+ * Part 1 requires calculating power consumption, represented by the `PowerConsumption` struct. It
+ * is made of the `gamma_rate` and the `epsilon_rate`. `gamma_rate` is calculated by taking the most
+ * common bit on each position, and `epsilon_rate` the least common bit. This implies that
+ * `epsilon_rate` is exactly `gamma_rate` but with its bits flipped (if 1 is the most common bit for
+ * a given position, then 0 is the least common bit for that position). The problem statement does
+ * not say what to do in case of a tie, so it is assumed that it will never happen.
+ *
+ * It's important to keep track of the length of the initial diagnostics - after all, 101 is the
+ * same as 0101 and 00000101, but flipping bits yields different numbers in each case (101 is 010,
+ * 0101 is 1010 and 00000101 is 11111010). Once the number is parsed from the input string we don't
+ * know how long it was anymore, so we keep track of the length to be able to flip the bits properly
+ * afterwards.
+ *
+ * Part 2 requires calculating the life support rating, which is represented by the
+ * `LifeSupportRating` struct. It's made of the `oxygen_generator_rating` and the
+ * `co2_scrubber_rating`. They both go through each position of the diagnostics and for each
+ * position go in turn through each diagnostic, filtering out the diagnostics that do not match the
+ * most/least common bit for that position respectively. They then move to the next position and
+ * filter for the most/least common bit in the _new and filtered_ list of diagnostics and so on
+ * until only one diagnostic is left. They both have the same logic so `find_diagnostic` does that,
+ * with a function argument to determine whether most or least common should be considered.
+ *
+ * Both parts need to know what is the most and least common bit for a given position across the
+ * list of diagnostics. To that end, that is precalculated once and stored when creating an instance
+ * of the `Submarine` struct. In order to add some convenience methods, the counts themselves are
+ * stored in a `BitCounts` struct.
+ *
+ * For part 1 that's enough. Part 2 only uses the initial BitCounts the first time around, but after
+ * it starts filtering it needs to calculate more/least common across the *remaining* bit counts. To
+ * avoid calculating that each turn, the iteration keeps a separate BitCounts that represents the
+ * difference. Each time a diagnostic is filtered out, before discarding it we count its bits in the
+ * difference BitCounts. Then when checking for most/least common we do it for (the main BitCounts -
+ * the difference BitCounts). `ops::Sub` is implemented for that end (and `ops::AddAssign` to more
+ * easily add a diagnostic to the difference BitCounts).
+ */
+
 fn main() {
     let lines: Vec<Diagnostic> = read_lines()
         .expect("Error reading file")
@@ -93,6 +135,8 @@ impl Submarine {
         let mut i = 0;
 
         while diagnostic_test.len() > 1 {
+            // We need to track the next iteration's difference separately, because each diagnostic
+            // in this loop needs to use the difference the loop started with.
             let mut new_difference = difference.clone();
 
             diagnostic_test = diagnostic_test

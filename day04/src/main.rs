@@ -5,6 +5,25 @@ use std::{
     io::{self, BufRead},
 };
 
+/**
+ * --- Day 4: Giant Squid ---
+ *
+ * The input for the program is a series of numbers, followed by a series of bingo boards. Most of
+ * the code here is related to parsing the `Board`s out of the input, and for printing them back (
+ * which I used for debugging). Part 1 asks to check which of the boards is the first one to win (
+ * and what's the winning number) and part 2 asks for the *last* board to win (and again, with which
+ * number).
+ *
+ * `iterate_boards_in_winning_order` creates a `BoardsIterator` that takes the boards and the
+ * numbers and yields pairs of (winning number, winning board). In order to generate that, it takes
+ * the numbers from the list one by one, and for each numbers it iterates over all the boards, marks
+ * the number and checks if any board has won at that point. If it has it removes the board from the
+ * list and returns it alongside the number.
+ *
+ * With that iterator generated, part 1 takes `.next()` (the first element of the brand new
+ * iterator) and part 2 takes `.last()` (the last winning board).
+ */
+
 fn main() {
     let mut lines = read_lines()
         .expect("Error reading file")
