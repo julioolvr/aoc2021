@@ -1,5 +1,17 @@
+use std::env;
+
 fn main() {
-    let numbers: Vec<usize> = include_str!("../input.txt")
+    let file = if env::args()
+        .skip(1)
+        .next()
+        .map_or(false, |flag| flag == "--sample")
+    {
+        include_str!("../sample.txt")
+    } else {
+        include_str!("../input.txt")
+    };
+
+    let numbers: Vec<usize> = file
         .lines()
         .next()
         .unwrap()

@@ -6,4 +6,7 @@ https://adventofcode.com/2021/day/7
 
 ```
 cargo run
+
+# To run the sample file
+cargo run -- --sample
 ```
