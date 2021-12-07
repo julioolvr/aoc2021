@@ -11,7 +11,7 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let numbers: Vec<usize> = file
+    let positions: Vec<usize> = file
         .lines()
         .next()
         .unwrap()
@@ -19,15 +19,16 @@ fn main() {
         .map(|number| number.parse().unwrap())
         .collect();
 
-    let part_1 = part_1(numbers.clone());
+    let part_1 = part_1(&positions);
     println!("Part 1 {:?}", part_1);
 
-    let part_2 = part_2(numbers);
+    let part_2 = part_2(&positions);
     println!("Part 2 {:?}", part_2);
 }
 
-fn part_1(mut numbers: Vec<usize>) -> usize {
+fn part_1(positions: &[usize]) -> usize {
     // Calculate the mode for the set of numbers
+    let mut numbers = positions.to_vec();
     numbers.sort();
 
     let mode = if numbers.len() % 2 == 0 {
@@ -43,15 +44,15 @@ fn part_1(mut numbers: Vec<usize>) -> usize {
         .sum()
 }
 
-fn part_2(numbers: Vec<usize>) -> usize {
-    let max = numbers.iter().max().unwrap();
+fn part_2(positions: &[usize]) -> usize {
+    let max = positions.iter().max().unwrap();
 
     (0..=*max)
-        .map(|position| {
-            numbers
+        .map(|target| {
+            positions
                 .iter()
                 .map(|n| {
-                    let difference = (position as isize - *n as isize).abs() as usize;
+                    let difference = (target as isize - *n as isize).abs() as usize;
                     difference * (difference + 1) / 2
                 })
                 .sum()
