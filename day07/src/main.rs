@@ -10,7 +10,7 @@ use std::env;
  *
  * For part 1, moving 1 step costs 1 fuel. So the challenge is to find the target position that
  * minimizes the distance to each position in the input list. Instead of checking each possible
- * target we can calculate the *mode* of the input list. This is the value that splits the list in
+ * target we can calculate the *median* of the input list. This is the value that splits the list in
  * half. This is the position that minimizes the distance - moving one position to the side will, in
  * the best case, add 1 to the distance for every crab in one half and subtract one from the other
  * half, ending up in the same total fuel consumption. Worst case, moving to the side will make a
@@ -53,11 +53,11 @@ fn main() {
 }
 
 fn part_1(positions: &[usize]) -> usize {
-    // Calculate the mode for the set of numbers
+    // Calculate the median for the set of numbers
     let mut numbers = positions.to_vec();
     numbers.sort();
 
-    let mode = if numbers.len() % 2 == 0 {
+    let median = if numbers.len() % 2 == 0 {
         (numbers[numbers.len() / 2 - 1] + numbers[numbers.len() / 2]) / 2
     } else {
         numbers[numbers.len() / 2]
@@ -66,7 +66,7 @@ fn part_1(positions: &[usize]) -> usize {
     // Calculate fuel needed to get there
     numbers
         .iter()
-        .map(|n| (mode as isize - *n as isize).abs() as usize)
+        .map(|n| (median as isize - *n as isize).abs() as usize)
         .sum()
 }
 
