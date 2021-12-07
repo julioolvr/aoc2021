@@ -19,8 +19,11 @@ fn main() {
         .map(|number| number.parse().unwrap())
         .collect();
 
-    let part_1 = part_1(numbers);
+    let part_1 = part_1(numbers.clone());
     println!("Part 1 {:?}", part_1);
+
+    let part_2 = part_2(numbers);
+    println!("Part 2 {:?}", part_2);
 }
 
 fn part_1(mut numbers: Vec<usize>) -> usize {
@@ -38,4 +41,21 @@ fn part_1(mut numbers: Vec<usize>) -> usize {
         .iter()
         .map(|n| (mode as isize - *n as isize).abs() as usize)
         .sum()
+}
+
+fn part_2(numbers: Vec<usize>) -> usize {
+    let max = numbers.iter().max().unwrap();
+
+    (0..=*max)
+        .map(|position| {
+            numbers
+                .iter()
+                .map(|n| {
+                    let difference = (position as isize - *n as isize).abs() as usize;
+                    difference * (difference + 1) / 2
+                })
+                .sum()
+        })
+        .min()
+        .unwrap()
 }
