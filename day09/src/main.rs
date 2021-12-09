@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, iter::FromIterator};
+use std::{collections::HashSet, env, iter::FromIterator, ops::Index};
 
 /**
  * --- Day 9: Smoke Basin ---
@@ -55,6 +55,8 @@ fn main() {
     println!("Part 2: {}", part_2);
 }
 
+type Coordinates = (usize, usize);
+
 struct Map {
     map: Vec<Vec<usize>>,
     width: usize,
@@ -69,7 +71,7 @@ impl Map {
         Map { map, width, height }
     }
 
-    fn low_points(&self) -> Vec<(usize, (usize, usize))> {
+    fn low_points(&self) -> Vec<(usize, Coordinates)> {
         self.map
             .iter()
             .enumerate()
@@ -87,45 +89,53 @@ impl Map {
                             None
                         }
                     })
-                    .collect::<Vec<(usize, (usize, usize))>>()
+                    .collect::<Vec<(usize, Coordinates)>>()
             })
             .collect()
     }
 
-    fn basin_size(&self, coords: (usize, usize)) -> usize {
+    fn basin_size(&self, coords: Coordinates) -> usize {
         self.basin_map(coords).len()
     }
 
-    fn basin_map(&self, (x, y): (usize, usize)) -> HashSet<(usize, usize)> {
-        let n = self.map[y][x];
-        self.neighbors((x, y))
+    fn basin_map(&self, coords: Coordinates) -> HashSet<Coordinates> {
+        let n = self[coords];
+        self.neighbors(coords)
             .iter()
             .filter(|(neighbor, _)| *neighbor > n && *neighbor != 9)
-            .fold(HashSet::from_iter([(x, y)]), |mut set, (_, (x, y))| {
+            .fold(HashSet::from_iter([coords]), |mut set, (_, (x, y))| {
                 set.extend(self.basin_map((*x, *y)));
                 set
             })
     }
 
-    fn neighbors(&self, (x, y): (usize, usize)) -> Vec<(usize, (usize, usize))> {
+    fn neighbors(&self, (x, y): Coordinates) -> Vec<(usize, Coordinates)> {
         let mut result = vec![];
 
         if x > 0 {
-            result.push((self.map[y][x - 1], (x - 1, y)));
+            result.push((self[(x - 1, y)], (x - 1, y)));
         }
 
         if y > 0 {
-            result.push((self.map[y - 1][x], (x, y - 1)));
+            result.push((self[(x, y - 1)], (x, y - 1)));
         }
 
         if x < (self.width - 1) {
-            result.push((self.map[y][x + 1], (x + 1, y)));
+            result.push((self[(x + 1, y)], (x + 1, y)));
         }
 
         if y < (self.height - 1) {
-            result.push((self.map[y + 1][x], (x, y + 1)));
+            result.push((self[(x, y + 1)], (x, y + 1)));
         }
 
         return result;
+    }
+}
+
+impl Index<Coordinates> for Map {
+    type Output = usize;
+
+    fn index(&self, (x, y): Coordinates) -> &Self::Output {
+        &self.map[y][x]
     }
 }
