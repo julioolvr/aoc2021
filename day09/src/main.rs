@@ -77,16 +77,14 @@ impl Map {
                 row.iter()
                     .enumerate()
                     .filter_map(|(x, n)| {
-                        if x > 0 && self.map[y][x - 1] <= *n {
-                            None
-                        } else if y > 0 && self.map[y - 1][x] <= *n {
-                            None
-                        } else if x < (self.width - 1) && self.map[y][x + 1] <= *n {
-                            None
-                        } else if y < (self.height - 1) && self.map[y + 1][x] <= *n {
-                            None
-                        } else {
+                        if self
+                            .neighbors((x, y))
+                            .iter()
+                            .all(|(neighbor, _)| neighbor > n)
+                        {
                             Some((*n, (x, y)))
+                        } else {
+                            None
                         }
                     })
                     .collect::<Vec<(usize, (usize, usize))>>()
@@ -99,25 +97,35 @@ impl Map {
     }
 
     fn basin_map(&self, (x, y): (usize, usize)) -> HashSet<(usize, usize)> {
-        let mut result = HashSet::from_iter([(x, y)]);
         let n = self.map[y][x];
+        self.neighbors((x, y))
+            .iter()
+            .filter(|(neighbor, _)| *neighbor > n && *neighbor != 9)
+            .fold(HashSet::from_iter([(x, y)]), |mut set, (_, (x, y))| {
+                set.extend(self.basin_map((*x, *y)));
+                set
+            })
+    }
 
-        if x > 0 && self.map[y][x - 1] > n && self.map[y][x - 1] != 9 {
-            result.extend(self.basin_map((x - 1, y)));
+    fn neighbors(&self, (x, y): (usize, usize)) -> Vec<(usize, (usize, usize))> {
+        let mut result = vec![];
+
+        if x > 0 {
+            result.push((self.map[y][x - 1], (x - 1, y)));
         }
 
-        if y > 0 && self.map[y - 1][x] > n && self.map[y - 1][x] != 9 {
-            result.extend(self.basin_map((x, y - 1)));
+        if y > 0 {
+            result.push((self.map[y - 1][x], (x, y - 1)));
         }
 
-        if x < (self.width - 1) && self.map[y][x + 1] > n && self.map[y][x + 1] != 9 {
-            result.extend(self.basin_map((x + 1, y)));
+        if x < (self.width - 1) {
+            result.push((self.map[y][x + 1], (x + 1, y)));
         }
 
-        if y < (self.height - 1) && self.map[y + 1][x] > n && self.map[y + 1][x] != 9 {
-            result.extend(self.basin_map((x, y + 1)));
+        if y < (self.height - 1) {
+            result.push((self.map[y + 1][x], (x, y + 1)));
         }
 
-        result
+        return result;
     }
 }
