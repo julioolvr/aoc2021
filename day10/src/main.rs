@@ -13,22 +13,43 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let part_1: usize = file
-        .lines()
-        .map(|line| diagnose(line))
+    let diagnostics = file.lines().map(|line| diagnose(line));
+
+    let (lines, corrupted_lines): (Vec<Result<Vec<Token>, _>>, Vec<Result<_, ParseError>>) =
+        diagnostics.partition(|diagnostic| diagnostic.is_ok());
+
+    let part_1: usize = corrupted_lines
+        .iter()
         .filter_map(|result| {
             if let Err(error) = result {
                 Some(error)
             } else {
-                None
+                panic!("Unexpected non-corrupted line")
             }
         })
         .map(|error| error.score())
         .sum();
     println!("Part 1: {}", part_1);
+
+    let mut autocomplete_scores: Vec<usize> = lines
+        .iter()
+        .map(|line| line.as_ref().unwrap())
+        .filter_map(|line| {
+            if line.len() > 0 {
+                Some(find_completion_tokens(line))
+            } else {
+                None
+            }
+        })
+        .map(|tokens| autocomplete_score(&tokens))
+        .collect();
+
+    autocomplete_scores.sort();
+    let part_2 = autocomplete_scores[autocomplete_scores.len() / 2];
+    println!("Part 2: {}", part_2);
 }
 
-fn diagnose(line: &str) -> Result<(), ParseError> {
+fn diagnose(line: &str) -> Result<Vec<Token>, ParseError> {
     let mut stack = vec![];
 
     for token in line.chars().map(|char| Token::try_from(char).unwrap()) {
@@ -67,7 +88,70 @@ fn diagnose(line: &str) -> Result<(), ParseError> {
         }
     }
 
-    Ok(())
+    Ok(stack)
+}
+
+fn find_completion_tokens(line: &Vec<Token>) -> Vec<Token> {
+    let mut result = vec![];
+    let mut unopened_tokens = 0;
+
+    for token in line.iter().rev() {
+        use Token::*;
+
+        match token {
+            LeftParen => {
+                if unopened_tokens == 0 {
+                    result.push(RightParen);
+                } else {
+                    unopened_tokens -= 1;
+                }
+            }
+            LeftBracket => {
+                if unopened_tokens == 0 {
+                    result.push(RightBracket);
+                } else {
+                    unopened_tokens -= 1;
+                }
+            }
+            LeftBrace => {
+                if unopened_tokens == 0 {
+                    result.push(RightBrace);
+                } else {
+                    unopened_tokens -= 1;
+                }
+            }
+            LeftAngle => {
+                if unopened_tokens == 0 {
+                    result.push(RightAngle);
+                } else {
+                    unopened_tokens -= 1;
+                }
+            }
+            _ => unopened_tokens += 1,
+        }
+    }
+
+    result
+}
+
+fn autocomplete_score(tokens: &Vec<Token>) -> usize {
+    let mut score = 0;
+
+    for token in tokens.iter() {
+        use Token::*;
+
+        score *= 5;
+
+        score += match token {
+            RightParen => 1,
+            RightBracket => 2,
+            RightBrace => 3,
+            RightAngle => 4,
+            token => panic!("Unexpected closing token {:?}", token),
+        }
+    }
+
+    score
 }
 
 #[derive(PartialEq, Debug)]
@@ -102,6 +186,7 @@ impl TryFrom<char> for Token {
     }
 }
 
+#[derive(Debug)]
 struct ParseError(Token);
 
 impl ParseError {
