@@ -2,6 +2,38 @@ use std::{convert::TryFrom, env};
 
 use anyhow::bail;
 
+/**
+ * --- Day 10: Syntax Scoring ---
+ *
+ * The input is a list of lines, where each line is a combination of ()[]{}<>. Both parts revolve
+ * around finding unbalanced lines and calculating values based on it. The problem statement
+ * considers three cases for each of the lines - they might be incomplete (all the characters
+ * present are balanced, but the string ends before closing al of them), corrupted (a closing
+ * character is present that does not match the currently open one) and (not explicitly mentioned)
+ * "balanced" lines (all pairs are properly balanced).
+ *
+ * The `diagnose` function takes a line (as a string) and returns a result. Balanced and incomplete
+ * lines are considered Ok, and corrupted lines are an error (of type `ParseError` that internally
+ * contains the offending token). In the main program, Ok and Err are divided into two separate
+ * lists.
+ *
+ * For part 1 we care about the errors (i.e. corrupted lines). We need to calculate a score for each
+ * based on the offending character which is why it's included in `ParseError`. We add them all up
+ * and get our result.
+ *
+ * For part 2 we care about incomplete lines. `diagnose` internally uses a stack to which it adds
+ * tokens for ([{< and removes tokens for )]}>. The final state of the stack is what's returned in
+ * the Ok case. A balanced line will have an empty stack, and an incomplete one will have some
+ * remaining tokens on it. Part 2 asks to calculate a score based on the necessary closing tokens
+ * that would balance those incomplete lines. We pop elements from the stack one by one and check
+ * which token needs to be used. We might run into closing tokens too - this means and internally
+ * balanced pair that we have to ignore. E.g. '[()' has a pair of matching parenthesis, so the only
+ * necessary token to balance it out is the closing ]. For that reason we keep track of "unopened"
+ * pairs when we find a closing token to know that we have to ignore it when it's opened. Since
+ * diagnose already checked that the pairs match correctly, we can only count them, there's no need
+ * to check if they're balanced again. The rest is calculating the score based on the result.
+ */
+
 fn main() {
     let file = if env::args()
         .skip(1)
@@ -20,27 +52,17 @@ fn main() {
 
     let part_1: usize = corrupted_lines
         .iter()
-        .filter_map(|result| {
-            if let Err(error) = result {
-                Some(error)
-            } else {
-                panic!("Unexpected non-corrupted line")
-            }
-        })
+        .map(Result::as_ref)
+        .map(Result::unwrap_err)
         .map(|error| error.score())
         .sum();
     println!("Part 1: {}", part_1);
 
     let mut autocomplete_scores: Vec<usize> = lines
         .iter()
-        .map(|line| line.as_ref().unwrap())
-        .filter_map(|line| {
-            if line.len() > 0 {
-                Some(find_completion_tokens(line))
-            } else {
-                None
-            }
-        })
+        .map(Result::as_ref)
+        .map(Result::unwrap)
+        .map(|line| find_completion_tokens(line))
         .map(|tokens| autocomplete_score(&tokens))
         .collect();
 
@@ -135,23 +157,18 @@ fn find_completion_tokens(line: &Vec<Token>) -> Vec<Token> {
 }
 
 fn autocomplete_score(tokens: &Vec<Token>) -> usize {
-    let mut score = 0;
-
-    for token in tokens.iter() {
+    tokens.iter().fold(0, |score, token| {
         use Token::*;
 
-        score *= 5;
-
-        score += match token {
-            RightParen => 1,
-            RightBracket => 2,
-            RightBrace => 3,
-            RightAngle => 4,
-            token => panic!("Unexpected closing token {:?}", token),
-        }
-    }
-
-    score
+        score * 5
+            + match token {
+                RightParen => 1,
+                RightBracket => 2,
+                RightBrace => 3,
+                RightAngle => 4,
+                token => panic!("Unexpected closing token {:?}", token),
+            }
+    })
 }
 
 #[derive(PartialEq, Debug)]
