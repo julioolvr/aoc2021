@@ -11,9 +11,26 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let mut map: Map = file.parse().unwrap();
-    let part_1 = map.simulate(100);
+    let map: Map = file.parse().unwrap();
+    let mut simulator = simulate(map);
+
+    let part_1: usize = simulator.by_ref().take(100).sum();
     println!("Part 1: {}", part_1);
+
+    let part_2 = simulator
+        .enumerate()
+        .find_map(|(i, flashes)| {
+            if flashes == 100 {
+                // We add 1 because i is zero sized, but the first step per the problem definition
+                // is 1. We add 100 because we consumed the first 100 for part 1 and we only
+                // start counting when iterating for part 2.
+                Some(i + 1 + 100)
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    println!("Part 2: {}", part_2);
 }
 
 type Coordinates = (usize, usize);
@@ -45,14 +62,6 @@ impl Map {
     fn at(&mut self, coordinates: Coordinates) -> Option<&mut Octopus> {
         let index = self.to_index(coordinates);
         self.octopuses.get_mut(index)
-    }
-
-    fn simulate(&mut self, steps: usize) -> usize {
-        let mut flashes = 0;
-        for _ in 0..steps {
-            flashes += self.step();
-        }
-        flashes
     }
 
     fn step(&mut self) -> usize {
@@ -168,5 +177,21 @@ impl Octopus {
             energy,
             flashed: false,
         }
+    }
+}
+
+struct StepIterator {
+    map: Map,
+}
+
+fn simulate(map: Map) -> StepIterator {
+    StepIterator { map }
+}
+
+impl Iterator for StepIterator {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<usize> {
+        Some(self.map.step())
     }
 }
