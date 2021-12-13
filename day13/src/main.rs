@@ -19,12 +19,19 @@ fn main() {
         .take_while(|line| line != &"")
         .map(|line| line.parse().unwrap())
         .collect();
-    let mut paper = Paper::new(points);
-
+    let initial_width = points.iter().map(|point| point.x).max().unwrap() + 1;
+    let initial_height = points.iter().map(|point| point.y).max().unwrap() + 1;
+    let mut paper = Paper::new(points, initial_width, initial_height);
     let mut instructions = lines.map(|line| line.parse().unwrap());
+
     paper = paper.fold(instructions.next().unwrap());
     let part_1 = paper.points.len();
     println!("Part 1: {}", part_1);
+
+    for instruction in instructions {
+        paper = paper.fold(instruction);
+    }
+    println!("Part 2: \n{:?}", paper);
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -63,9 +70,7 @@ struct Paper {
 }
 
 impl Paper {
-    fn new(points: HashSet<Coordinates>) -> Self {
-        let width = points.iter().map(|point| point.x).max().unwrap() + 1;
-        let height = points.iter().map(|point| point.y).max().unwrap() + 1;
+    fn new(points: HashSet<Coordinates>, width: usize, height: usize) -> Self {
         Paper {
             points,
             width,
@@ -90,7 +95,12 @@ impl Paper {
             Instruction::Y(_) => (point.x, height - point.y - 1).into(),
         }));
 
-        Paper::new(new_points)
+        let (new_width, new_height) = match instruction {
+            Instruction::X(_) => (width / 2, height),
+            Instruction::Y(_) => (width, height / 2),
+        };
+
+        Paper::new(new_points, new_width, new_height)
     }
 }
 
