@@ -1,6 +1,7 @@
-use std::{collections::HashMap, env, fmt, str::FromStr};
+use std::{collections::HashMap, env};
 
 use anyhow::anyhow;
+use cached::{proc_macro::cached, UnboundCache};
 use regex::Regex;
 
 fn main() {
@@ -15,100 +16,98 @@ fn main() {
     };
 
     let mut lines = file.lines();
-    let mut template: Template = lines.next().unwrap().into();
+    let template = lines.next().unwrap();
 
     // Skip empty line
     lines.next();
 
-    let insertion_rules: PairInsertionRules =
-        lines.collect::<Vec<&str>>().join("\n").parse().unwrap();
+    let insertion_rules = parse_rules(lines);
 
-    for _ in 0..10 {
-        template.step(&insertion_rules);
-    }
+    let char_counts = counts(template, 10, &insertion_rules);
+    let min = char_counts.values().min().unwrap();
+    let max = char_counts.values().max().unwrap();
 
-    let (min, max) = template.least_and_most_common_element_counts();
     let part_1 = max - min;
     println!("Part 1: {}", part_1);
+
+    let char_counts = counts(template, 40, &insertion_rules);
+    let min = char_counts.values().min().unwrap();
+    let max = char_counts.values().max().unwrap();
+
+    let part_2 = max - min;
+    println!("Part 2: {}", part_2);
 }
 
-struct Template {
-    template: String,
+fn counts(
+    template: &'static str,
+    steps: usize,
+    rules: &HashMap<(char, char), char>,
+) -> HashMap<char, usize> {
+    let chars: Vec<char> = template.chars().collect();
+    let mut result = HashMap::new();
+
+    for window in chars.as_slice().windows(2) {
+        for (char, count) in count_pair((window[0], window[1]), steps, rules) {
+            *result.entry(char).or_insert(0) += count;
+        }
+    }
+
+    // All characters except for the first and the last get counted twice (once in each window
+    // they're part of) so we make up for that in this loop
+    for char in template[1..template.len() - 1].chars() {
+        *result.get_mut(&char).unwrap() -= 1;
+    }
+
+    result
 }
 
-impl Template {
-    fn step(&mut self, rules: &PairInsertionRules) {
-        let mut inserted = 0;
-        let mut new_template = self.template.clone();
-        let current_chars: Vec<char> = self.template.chars().collect();
+#[cached(
+    type = "UnboundCache<(char, char, usize), HashMap<char, usize>>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ (first, second, steps) }"#
+)]
+fn count_pair(
+    (first, second): (char, char),
+    steps: usize,
+    rules: &HashMap<(char, char), char>,
+) -> HashMap<char, usize> {
+    let mut result = HashMap::new();
 
-        for (i, window) in current_chars.as_slice().windows(2).enumerate() {
-            let first = window[0];
-            let second = window[1];
-
-            if let Some(insert) = rules.rules.get(&(first, second)) {
-                new_template.insert(i + inserted + 1, insert.clone());
-                inserted += 1;
+    match rules.get(&(first, second)) {
+        Some(insert) if steps > 0 => {
+            for (char, count) in count_pair((first, *insert), steps - 1, rules) {
+                *result.entry(char).or_insert(0) += count;
             }
+
+            for (char, count) in count_pair((*insert, second), steps - 1, rules) {
+                *result.entry(char).or_insert(0) += count;
+            }
+
+            *result.get_mut(insert).unwrap() -= 1;
         }
-
-        self.template = new_template;
-    }
-
-    fn least_and_most_common_element_counts(&self) -> (usize, usize) {
-        let mut result = HashMap::new();
-
-        for char in self.template.chars() {
-            *result.entry(char).or_insert(0) += 1;
-        }
-
-        let min = result.values().min().unwrap();
-        let max = result.values().max().unwrap();
-        (*min, *max)
-    }
-}
-
-impl Into<Template> for &str {
-    fn into(self) -> Template {
-        Template {
-            template: self.to_string(),
+        _ => {
+            // No more steps, or simply no rule to expand the given pair
+            result.insert(first, 1);
+            *result.entry(second).or_insert(0) += 1;
         }
     }
+
+    result
 }
 
-struct PairInsertionRules {
-    rules: HashMap<(char, char), char>,
-}
+fn parse_rules(rules: impl Iterator<Item = &'static str>) -> HashMap<(char, char), char> {
+    let re = Regex::new(r"(?P<given>\w\w) -> (?P<insert>\w)").unwrap();
+    rules
+        .map(|line| {
+            let captures = re
+                .captures(line)
+                .ok_or(anyhow!("Unable to match pair insertion rule"))
+                .unwrap();
 
-impl FromStr for PairInsertionRules {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"(?P<given>\w\w) -> (?P<insert>\w)")?;
-        let map: HashMap<(char, char), char> = s
-            .lines()
-            .map(|line| {
-                let captures = re
-                    .captures(line)
-                    .ok_or(anyhow!("Unable to match pair insertion rule"))?;
-
-                let mut given_chars = captures["given"].chars();
-                let given = (given_chars.next().unwrap(), given_chars.next().unwrap());
-                let insert = captures["insert"].chars().next().unwrap();
-                Ok((given, insert))
-            })
-            .collect::<Result<_, anyhow::Error>>()?;
-
-        Ok(PairInsertionRules { rules: map })
-    }
-}
-
-impl fmt::Debug for PairInsertionRules {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (given, insert) in &self.rules {
-            writeln!(f, "{}{} -> {}", given.0, given.1, insert)?;
-        }
-
-        Ok(())
-    }
+            let mut given_chars = captures["given"].chars();
+            let given = (given_chars.next().unwrap(), given_chars.next().unwrap());
+            let insert = captures["insert"].chars().next().unwrap();
+            (given, insert)
+        })
+        .collect()
 }
