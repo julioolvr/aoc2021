@@ -5,6 +5,8 @@ fn main() {
     let packet = parse(file);
     let part_1 = version_numbers_sum(&packet);
     println!("Part 1: {}", part_1);
+    let part_2 = process(&packet);
+    println!("Part 2: {}", part_2);
 }
 
 type Bit = bool;
@@ -12,11 +14,62 @@ type Bit = bool;
 #[derive(PartialEq, Debug)]
 enum Packet {
     Literal(u8, usize),
-    Operator(u8, Vec<Packet>),
+    Operator(u8, Operation, Vec<Packet>),
+}
+
+#[derive(PartialEq, Debug)]
+enum Operation {
+    Sum,
+    Product,
+    Min,
+    Max,
+    Gt,
+    Lt,
+    Eq,
 }
 
 fn parse(input: &'static str) -> Packet {
     parse_packet(&mut parse_bits(input).iter().by_ref()).0
+}
+
+fn process(packet: &Packet) -> usize {
+    use Packet::*;
+
+    match packet {
+        Literal(_, value) => *value,
+        Operator(_, operation, packets) => {
+            use Operation::*;
+            let mut packet_values = packets.iter().map(|packet| process(packet));
+
+            match operation {
+                Sum => packet_values.sum(),
+                Product => packet_values.product(),
+                Min => packet_values.min().unwrap(),
+                Max => packet_values.max().unwrap(),
+                Gt => {
+                    if packet_values.next().unwrap() > packet_values.next().unwrap() {
+                        1
+                    } else {
+                        0
+                    }
+                }
+                Lt => {
+                    if packet_values.next().unwrap() < packet_values.next().unwrap() {
+                        1
+                    } else {
+                        0
+                    }
+                }
+                Eq => {
+                    if packet_values.next().unwrap() == packet_values.next().unwrap() {
+                        1
+                    } else {
+                        0
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn parse_bits(input: &'static str) -> BitVec {
@@ -60,9 +113,22 @@ fn parse_packet<'a>(bits: &mut impl Iterator<Item = &'a Bit>) -> (Packet, usize)
             let (literal, more_bits_read) = consume_literal(bits);
             (Literal(version, literal), more_bits_read)
         }
-        _ => {
+        n => {
             let (subpackets, more_bits_read) = parse_subpackets(bits);
-            (Operator(version, subpackets), more_bits_read)
+
+            use Operation::*;
+            let operation = match n {
+                0 => Sum,
+                1 => Product,
+                2 => Min,
+                3 => Max,
+                5 => Gt,
+                6 => Lt,
+                7 => Eq,
+                _ => panic!("Invalid operation type {}", n),
+            };
+
+            (Operator(version, operation, subpackets), more_bits_read)
         }
     };
 
@@ -138,7 +204,7 @@ fn version_numbers_sum(packet: &Packet) -> usize {
 
     match packet {
         Literal(version, _) => *version as usize,
-        Operator(version, subpackets) => {
+        Operator(version, _, subpackets) => {
             let sum: usize = subpackets
                 .iter()
                 .map(|packet| version_numbers_sum(packet))
@@ -162,7 +228,11 @@ mod tests {
     fn test_parse_operator_with_bit_length() {
         assert_eq!(
             parse("38006F45291200"),
-            Packet::Operator(1, vec![Packet::Literal(6, 10), Packet::Literal(2, 20)])
+            Packet::Operator(
+                1,
+                Operation::Lt,
+                vec![Packet::Literal(6, 10), Packet::Literal(2, 20)]
+            )
         );
     }
 
@@ -172,6 +242,7 @@ mod tests {
             parse("EE00D40C823060"),
             Packet::Operator(
                 7,
+                Operation::Max,
                 vec![
                     Packet::Literal(2, 1),
                     Packet::Literal(4, 2),
@@ -196,5 +267,17 @@ mod tests {
             version_numbers_sum(&parse("A0016C880162017C3686B18A3D4780")),
             31
         );
+    }
+
+    #[test]
+    fn test_packet_processing() {
+        assert_eq!(process(&parse("C200B40A82")), 3);
+        assert_eq!(process(&parse("04005AC33890")), 54);
+        assert_eq!(process(&parse("880086C3E88112")), 7);
+        assert_eq!(process(&parse("CE00C43D881120")), 9);
+        assert_eq!(process(&parse("D8005AC2A8F0")), 1);
+        assert_eq!(process(&parse("F600BC2D8F")), 0);
+        assert_eq!(process(&parse("9C005AC2F8F0")), 0);
+        assert_eq!(process(&parse("9C0141080250320F1802104A08")), 1);
     }
 }
