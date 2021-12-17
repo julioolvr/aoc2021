@@ -11,7 +11,7 @@ fn main() {
         ((153, -75), (199, -114))
     };
 
-    let x_candidates = find_x_candidates(top_left.0, bottom_right.0);
+    let x_candidates = find_x_candidates(bottom_right.0);
     let y_candidates = find_y_candidates(bottom_right.1);
     let part_1 = find_max_y(&y_candidates);
     println!("Part 1: {:?}", part_1);
@@ -19,33 +19,8 @@ fn main() {
     println!("Part 2: {:?}", part_2);
 }
 
-fn find_x_candidates(from: isize, to: isize) -> Vec<isize> {
-    let mut result = vec![];
-    let mut candidate = 0;
-
-    while candidate <= to {
-        let mut current_position = 0;
-        let mut current_speed = candidate;
-
-        while current_speed != 0 && current_position <= to {
-            current_position += current_speed;
-
-            if current_position >= from && current_position <= to {
-                result.push(candidate);
-                break;
-            }
-
-            if current_speed > 0 {
-                current_speed -= 1;
-            } else if current_speed < 0 {
-                current_speed += 1;
-            }
-        }
-
-        candidate += 1;
-    }
-
-    result
+fn find_x_candidates(to: isize) -> Vec<isize> {
+    (0..=to).collect()
 }
 
 fn find_y_candidates(to: isize) -> Vec<isize> {
