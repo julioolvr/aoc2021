@@ -13,8 +13,10 @@ fn main() {
 
     let x_candidates = find_x_candidates(top_left.0, bottom_right.0);
     let y_candidates = find_y_candidates(bottom_right.1);
-    let part_1 = find_max_y(top_left, bottom_right, x_candidates, y_candidates).unwrap();
+    let part_1 = find_max_y(&y_candidates);
     println!("Part 1: {:?}", part_1);
+    let part_2 = find_all_velocities(top_left, bottom_right, &x_candidates, &y_candidates).len();
+    println!("Part 2: {:?}", part_2);
 }
 
 fn find_x_candidates(from: isize, to: isize) -> Vec<isize> {
@@ -47,30 +49,36 @@ fn find_x_candidates(from: isize, to: isize) -> Vec<isize> {
 }
 
 fn find_y_candidates(to: isize) -> Vec<isize> {
-    (to..0).rev().map(|target_y| target_y.abs() - 1).collect()
+    (to..-to).collect()
 }
 
-fn find_max_y(
+fn find_max_y(y_candidates: &Vec<isize>) -> isize {
+    let max_y = y_candidates.iter().max().unwrap();
+    max_y * (max_y + 1) / 2
+}
+
+fn find_all_velocities(
     top_left: (isize, isize),
     bottom_right: (isize, isize),
-    x_candidates: Vec<isize>,
-    y_candidates: Vec<isize>,
-) -> Option<isize> {
+    x_candidates: &Vec<isize>,
+    y_candidates: &Vec<isize>,
+) -> Vec<(isize, isize)> {
     x_candidates
         .iter()
+        .copied()
         .flat_map(|x| {
-            y_candidates
-                .iter()
-                .filter_map(move |y| simulate((*x, *y), top_left, bottom_right))
+            y_candidates.iter().copied().filter_map(move |y| {
+                if simulate((x, y), top_left, bottom_right) {
+                    Some((x, y))
+                } else {
+                    None
+                }
+            })
         })
-        .max()
+        .collect()
 }
 
-fn simulate(
-    speed: (isize, isize),
-    top_left: (isize, isize),
-    bottom_right: (isize, isize),
-) -> Option<isize> {
+fn simulate(speed: (isize, isize), top_left: (isize, isize), bottom_right: (isize, isize)) -> bool {
     let mut current_position = (0, 0);
     let mut current_speed = speed;
     let mut max_y = 0;
@@ -90,12 +98,12 @@ fn simulate(
             && current_position.1 <= top_left.1
             && current_position.1 >= bottom_right.1
         {
-            return Some(max_y);
+            return true;
         }
 
         // Stopped moving in X and it already went past the target area vertically
         if current_speed.0 == 0 && current_position.1 < bottom_right.1 {
-            return None;
+            return false;
         } else if current_speed.0 > 0 {
             current_speed.0 -= 1;
         } else if current_speed.0 < 0 {
@@ -105,5 +113,5 @@ fn simulate(
         current_speed.1 -= 1;
     }
 
-    None
+    false
 }
