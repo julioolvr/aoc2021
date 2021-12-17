@@ -1,5 +1,38 @@
 use std::env;
 
+/**
+ * --- Day 17: Trick Shot ---
+ *
+ * The program has to calculate different initial velocities for a projectile that has to show up
+ * within a given area in any number of integer steps. The input of the program is the boundaries
+ * of this area. The projectile moves in X and Y given some initial speed (X increases to the right,
+ * Y increases upwards). It slows down to 0 in X, and it gets gravity applied in Y (decreasing Y
+ * velocity by 1 in each step, going faster and faster in the negative direction).
+ *
+ * The first part of the problem asks for the highest possible height Y can achieve. Since X and Y
+ * change position and velocity independently, it is possible to calculate this ignoring X. There's
+ * one caveat: we have to assume there's some velocity in X that will make it slow down to 0 within
+ * the boundaries given. This is the case for the inputs. Given that, we can start with that
+ * velocity in X and shoot as high as we want to - it will slow down to 0 within the given area so
+ * the only challenge is ensuring it passes through the area in Y. One property of the movement in Y
+ * is that regardless of the initial upwards speed, it will always go through 0 again with that
+ * initial speed in the negative direction - 1. So we can calculate how fast it can go when it goes
+ * downwards. In the sample the lower bound for Y is -10. If it starts at 0 with Y speed -10, it
+ * will barely hit the area. -11 and lower won't work. So we turn that in the opposite direction and
+ * subtract 1 and it gives us 9 as the starting velocity upward. To calculate the maximum height it
+ * will be 9+8+7+6+... or a triangular number. This is calculated in `find_max_y`, and gives the
+ * result for part 1.
+ *
+ * For part 2 we simply simulate. We need some lower and upper bounds for the speeds of X and Y.
+ * For X, it has to start at least at 0 to go *somewhere*. The upper bound is the right-most side of
+ * the target area - any more and it would go past in a single step. For Y it's similar, except that
+ * gravity means we can shoot in the opposite direction of the target area too. So the minimum value
+ * is the lower end of the target area as explained before, and the upper value is the one we found
+ * in part 1 (which in turn we used to calculate the maximum height). Then we simulate all
+ * combinations. It surely is possible to optimize these candidates, but the program runs fast
+ * enough with that simple approach (< 5ms).
+ */
+
 fn main() {
     let (top_left, bottom_right) = if env::args()
         .skip(1)
@@ -20,7 +53,7 @@ fn main() {
 }
 
 fn find_x_candidates(to: isize) -> Vec<isize> {
-    (0..=to).collect()
+    (1..=to).collect()
 }
 
 fn find_y_candidates(to: isize) -> Vec<isize> {
