@@ -15,13 +15,26 @@ fn main() {
 
     let numbers: Vec<Number> = file.lines().map(|line| line.parse().unwrap()).collect();
     let total_sum: Number = numbers
-        .into_iter()
+        .iter()
+        .cloned()
         .reduce(|acc, number| acc + number)
         .unwrap();
-    println!("Part 1: {}", total_sum.magnitude());
+    let part_1 = total_sum.magnitude();
+    println!("Part 1: {}", part_1);
+
+    let magnitudes = numbers.iter().enumerate().flat_map(|(i, number)| {
+        numbers[i + 1..].iter().flat_map(move |another_number| {
+            [
+                (number.clone() + another_number.clone()).magnitude(),
+                (another_number.clone() + number.clone()).magnitude(),
+            ]
+        })
+    });
+    let part_2 = magnitudes.max().unwrap();
+    println!("Part 2: {}", part_2);
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Number {
     Number(usize),
     Pair(Box<Number>, Box<Number>),
