@@ -322,11 +322,11 @@ mod tests {
 
     macro_rules! number {
         ( $number:literal ) => {
-            Box::new(Number::Number($number))
+            Number::Number($number)
         };
 
         ( [$left:tt, $right:tt] ) => {
-            Box::new(Number::Pair(number!($left), number!($right)))
+            Number::Pair(Box::new(number!($left)), Box::new(number!($right)))
         };
     }
 
@@ -334,48 +334,48 @@ mod tests {
     fn test_explode_reduction() {
         assert_eq!(
             reduce(&number![[[[[[9, 8], 1], 2], 3], 4]]),
-            *number![[[[[0, 9], 2], 3], 4]]
+            number![[[[[0, 9], 2], 3], 4]]
         );
 
         assert_eq!(
             reduce(&number![[7, [6, [5, [4, [3, 2]]]]]]),
-            *number![[7, [6, [5, [7, 0]]]]]
+            number![[7, [6, [5, [7, 0]]]]]
         );
 
         assert_eq!(
             reduce(&number![[[6, [5, [4, [3, 2]]]], 1]]),
-            *number![[[6, [5, [7, 0]]], 3]]
+            number![[[6, [5, [7, 0]]], 3]]
         );
 
         assert_eq!(
             reduce(&number![[[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]]),
-            *number![[[3, [2, [8, 0]]], [9, [5, [7, 0]]]]]
+            number![[[3, [2, [8, 0]]], [9, [5, [7, 0]]]]]
         );
     }
 
     #[test]
     fn test_split() {
-        assert_eq!(reduce(&number![[10, 1]]), *number![[[5, 5], 1]]);
+        assert_eq!(reduce(&number![[10, 1]]), number![[[5, 5], 1]]);
     }
 
     #[test]
     fn test_full_reduction() {
         assert_eq!(
             reduce(&number![[[[[[4, 3], 4], 4], [7, [[8, 4], 9]]], [1, 1]]]),
-            *number![[[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]]
+            number![[[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]]
         );
     }
 
     #[test]
     fn test_addition() {
         assert_eq!(
-            *number![[1, 2]] + *number![[[3, 4], 5]],
-            *number![[[1, 2], [[3, 4], 5]]]
+            number![[1, 2]] + number![[[3, 4], 5]],
+            number![[[1, 2], [[3, 4], 5]]]
         );
 
         assert_eq!(
-            *number![[[[[4, 3], 4], 4], [7, [[8, 4], 9]]]] + *number![[1, 1]],
-            *number![[[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]]
+            number![[[[[4, 3], 4], 4], [7, [[8, 4], 9]]]] + number![[1, 1]],
+            number![[[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]]
         );
     }
 
@@ -394,17 +394,14 @@ mod tests {
 
     #[test]
     fn test_macro_simple_number() {
-        assert_eq!(number![42], Box::new(Number::Number(42)))
+        assert_eq!(number![42], Number::Number(42))
     }
 
     #[test]
     fn test_macro_pair() {
         assert_eq!(
             number![[1, 2]],
-            Box::new(Number::Pair(
-                Box::new(Number::Number(1)),
-                Box::new(Number::Number(2))
-            ))
+            Number::Pair(Box::new(Number::Number(1)), Box::new(Number::Number(2)))
         )
     }
 
@@ -422,7 +419,7 @@ mod tests {
 
         assert_eq!(
             number![[[[[1, 2], [3, 4]], [[5, 6], [7, 8]]], 9]],
-            bp(
+            *bp(
                 bp(
                     bp(bp(bn(1), bn(2)), bp(bn(3), bn(4))),
                     bp(bp(bn(5), bn(6)), bp(bn(7), bn(8))),
@@ -435,12 +432,12 @@ mod tests {
     #[test]
     fn test_parse() {
         assert_eq!(
-            *number![[[1, 2], [[3, 4], 5]]],
+            number![[[1, 2], [[3, 4], 5]]],
             "[[1,2],[[3,4],5]]".parse().unwrap()
         );
 
         assert_eq!(
-            *number![[[[0, [5, 8]], [[1, 7], [9, 6]]], [[4, [1, 2]], [[1, 4], 2]]]],
+            number![[[[0, [5, 8]], [[1, 7], [9, 6]]], [[4, [1, 2]], [[1, 4], 2]]]],
             "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]"
                 .parse()
                 .unwrap()
