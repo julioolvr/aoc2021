@@ -21,9 +21,16 @@ fn main() {
     let image = image.decompress_step(&algorithm);
     let part_1 = image.light_pixels_count();
     println!("Part 1: {}", part_1);
+
+    let mut image = image;
+    for _ in 2..50 {
+        image = image.decompress_step(&algorithm);
+    }
+    let part_2 = image.light_pixels_count();
+    println!("Part 2: {}", part_2);
 }
 
-#[derive(Hash, PartialEq, Eq, Debug)]
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
 struct Coordinates {
     x: isize,
     y: isize,
@@ -35,13 +42,14 @@ impl From<(isize, isize)> for Coordinates {
     }
 }
 
+#[derive(Clone)]
 struct Image {
-    pixels: PixelMap,
+    pixels: HashMap<Coordinates, bool>,
     empty_pixel_value: bool,
 }
 
 impl Image {
-    fn new(pixel_coordinates: PixelMap, empty_pixel_value: bool) -> Self {
+    fn new(pixel_coordinates: HashMap<Coordinates, bool>, empty_pixel_value: bool) -> Self {
         Image {
             pixels: pixel_coordinates,
             empty_pixel_value,
@@ -49,15 +57,9 @@ impl Image {
     }
 
     fn light_pixels_count(&self) -> usize {
-        self.pixels.pixels.values().filter(|pixel| **pixel).count()
+        self.pixels.values().filter(|pixel| **pixel).count()
     }
-}
 
-struct PixelMap {
-    pixels: HashMap<Coordinates, bool>,
-}
-
-impl PixelMap {
     fn top_left(&self) -> Coordinates {
         (
             self.pixels
@@ -91,12 +93,6 @@ impl PixelMap {
     }
 }
 
-impl From<HashMap<Coordinates, bool>> for PixelMap {
-    fn from(pixels: HashMap<Coordinates, bool>) -> PixelMap {
-        PixelMap { pixels }
-    }
-}
-
 fn parse_image(lines: &mut dyn Iterator<Item = &str>) -> Image {
     let pixel_coordinates: HashMap<Coordinates, bool> = lines
         .enumerate()
@@ -107,7 +103,7 @@ fn parse_image(lines: &mut dyn Iterator<Item = &str>) -> Image {
         })
         .collect();
 
-    Image::new(pixel_coordinates.into(), false)
+    Image::new(pixel_coordinates, false)
 }
 
 impl Image {
@@ -123,7 +119,6 @@ impl Image {
                 for y in pixel_y - 1..=pixel_y + 1 {
                     for x in pixel_x - 1..=pixel_x + 1 {
                         let value = self
-                            .pixels
                             .pixels
                             .get(&(x, y).into())
                             .copied()
@@ -146,15 +141,7 @@ impl Image {
             *algorithm.first().unwrap()
         };
 
-        Image::new(new_pixels.into(), empty_pixel_value)
-    }
-
-    fn top_left(&self) -> Coordinates {
-        self.pixels.top_left()
-    }
-
-    fn bottom_right(&self) -> Coordinates {
-        self.pixels.bottom_right()
+        Image::new(new_pixels, empty_pixel_value)
     }
 }
 
@@ -166,7 +153,6 @@ impl fmt::Debug for Image {
         for y in top_left.y..=bottom_right.y {
             for x in top_left.x..=bottom_right.x {
                 if *self
-                    .pixels
                     .pixels
                     .get(&(x, y).into())
                     .unwrap_or(&self.empty_pixel_value)
