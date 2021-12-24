@@ -1,6 +1,6 @@
-# Day 17
+# Day 20
 
-https://adventofcode.com/2021/day/17
+https://adventofcode.com/2021/day/20
 
 ## How to run
 
